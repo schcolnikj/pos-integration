@@ -1,12 +1,12 @@
 {
-    "type": "module",
-"scripts": {
-  "start": "node --env-file=.env.local src/cli.ts --item \"Buffalo Wings (12)\"",
-  "test": "node --test test/*.test.ts",
-  "typecheck": "tsc --noEmit"
-},
-    "devDependencies": {
-        "@types/node": "^26.6.4",
-        "typescript": "^7.0.2"
-    }
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env.local src/cli.ts --item \"Buffalo Wings (12)\"",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
+  }
 }

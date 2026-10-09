@@ -1,9 +1,4 @@
-import type {
-  Customer,
-  OrderResult,
-  SubmitResult,
-  PosClient,
-} from "./pos.ts";
+import type { Customer, OrderResult, SubmitResult, PosClient } from "./pos.ts";
 
 export const createOrder = async (
   pos: PosClient,

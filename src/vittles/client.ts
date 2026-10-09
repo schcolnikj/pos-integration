@@ -1,4 +1,11 @@
-import type { Location, MenuItem, NewOrder, Order, PosClient, SubmitResult } from "../pos.ts";
+import type {
+  Location,
+  MenuItem,
+  NewOrder,
+  Order,
+  PosClient,
+  SubmitResult,
+} from "../pos.ts";
 import { send } from "./http.ts";
 import { getToken } from "./auth.ts";
 
@@ -13,8 +20,7 @@ type RawMenuItem = {
 };
 
 type CreateOrderResponse =
-  | ({ status: "ACCEPTED" } & Order)
-  | { status: "REJECTED"; reason: string };
+  ({ status: "ACCEPTED" } & Order) | { status: "REJECTED"; reason: string };
 
 const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
   const call = (token: string) =>
@@ -23,15 +29,17 @@ const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
       headers: { Authorization: `Bearer ${token}`, ...init.headers },
     });
 
-    let response = await call(await getToken());
-    if (response.status === 401) {
-        response = await call(await getToken(true));
-    }
+  let response = await call(await getToken());
+  if (response.status === 401) {
+    response = await call(await getToken(true));
+  }
 
-    if (!response.ok) {
-        throw new Error(`${init.method ?? "GET"} ${path} failed: ${response.status}.`);
-    }
-    return response.json() as Promise<T>;
+  if (!response.ok) {
+    throw new Error(
+      `${init.method ?? "GET"} ${path} failed: ${response.status}.`,
+    );
+  }
+  return response.json() as Promise<T>;
 };
 
 export const getLocations = async (): Promise<Location[]> => {
@@ -40,7 +48,10 @@ export const getLocations = async (): Promise<Location[]> => {
 
   while (true) {
     const path: string =
-      "/" + api_version + "/locations" + (cursor ? "?cursor=" + encodeURIComponent(cursor) : "");
+      "/" +
+      api_version +
+      "/locations" +
+      (cursor ? "?cursor=" + encodeURIComponent(cursor) : "");
     const res = await request<{ data: Location[]; next_cursor?: string }>(
       path,
       {
@@ -56,8 +67,16 @@ export const getLocations = async (): Promise<Location[]> => {
 };
 
 export const getMenu = async (locationId: string): Promise<MenuItem[]> => {
-  const path = "/" + api_version + "/locations/" + encodeURIComponent(locationId) + "/menu";
-  const res = await request<{ menuItems?: RawMenuItem[]; menu_items?: RawMenuItem[] }>(path, {
+  const path =
+    "/" +
+    api_version +
+    "/locations/" +
+    encodeURIComponent(locationId) +
+    "/menu";
+  const res = await request<{
+    menuItems?: RawMenuItem[];
+    menu_items?: RawMenuItem[];
+  }>(path, {
     method: "GET",
   });
 
@@ -81,42 +100,40 @@ const findOrdersByRef = async (clientRef: string): Promise<Order[]> => {
 };
 
 const submitOrder = async (order: NewOrder): Promise<SubmitResult> => {
-    const path = "/" + api_version + "/orders";
-    const payload = {
-        location_id: order.locationId,
-        client_ref: order.clientRef,
-        customer: order.customer,
-        items: [
-            {
-                item_id: order.itemId,
-                quantity: order.quantity,
-            }
-        ],
-    };
-    const res = await request<CreateOrderResponse>(path, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: { "X-Vittles-Location": order.locationId },
-    });
+  const path = "/" + api_version + "/orders";
+  const payload = {
+    location_id: order.locationId,
+    client_ref: order.clientRef,
+    customer: order.customer,
+    items: [
+      {
+        item_id: order.itemId,
+        quantity: order.quantity,
+      },
+    ],
+  };
+  const res = await request<CreateOrderResponse>(path, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "X-Vittles-Location": order.locationId },
+  });
 
-    if (res.status === "ACCEPTED") {
-        return {
-            accepted: true,
-            orderId: res.id,
-            total: res.total,
-        };
-    }
+  if (res.status === "ACCEPTED") {
     return {
-        accepted: false,
-        reason: res.reason,
+      accepted: true,
+      orderId: res.id,
+      total: res.total,
     };
-}
-
-
+  }
+  return {
+    accepted: false,
+    reason: res.reason,
+  };
+};
 
 export const vittles: PosClient = {
-    getLocations,
-    getMenu,
-    findOrdersByRef,
-    submitOrder,
-}
+  getLocations,
+  getMenu,
+  findOrdersByRef,
+  submitOrder,
+};

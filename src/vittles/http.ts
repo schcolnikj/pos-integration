@@ -8,21 +8,23 @@ export const send = async (
   for (let retry = 0; ; retry++) {
     let response: Response;
     try {
-        response = await fetch(base_url + path, {
-          ...init,
-          headers: {
-            "Content-Type": "application/json",
-            ...init.headers,
-          },
-          signal: AbortSignal.timeout(10_000),
-        });
+      response = await fetch(base_url + path, {
+        ...init,
+        headers: {
+          "Content-Type": "application/json",
+          ...init.headers,
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
     } catch (error) {
-        if (method === "POST" || retry === 2) {
-            const { message, cause } = error as Error & { cause?: Error };
-            throw new Error(`${method} ${base_url + path} failed: ${cause?.message ?? message}`);
-        }
-        await new Promise((r) => setTimeout(r, 500 * 2 ** retry));
-        continue;
+      if (method === "POST" || retry === 2) {
+        const { message, cause } = error as Error & { cause?: Error };
+        throw new Error(
+          `${method} ${base_url + path} failed: ${cause?.message ?? message}`,
+        );
+      }
+      await new Promise((r) => setTimeout(r, 500 * 2 ** retry));
+      continue;
     }
     const retryable =
       response.status === 429 ||
