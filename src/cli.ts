@@ -84,7 +84,7 @@ const createOrders = async () => {
       results.push({ location, ok: false, reason: String(error) });
     }
   }
-  console.table(results);
+  console.table(results, ["location", "ok", "created", "orderId", "total", "reason", "note"]);
 };
 
 await createOrders();
