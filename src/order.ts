@@ -58,10 +58,10 @@ export const createOrder = async (
     if (existing) {
       return {
         ok: true,
-        created: false,
+        created: true,
         orderId: existing.id,
         total: existing.total,
-        note: "There was already an order with the same client reference. This order was not created again.",
+        note: "POST errored, but a client_ref lookup confirmed the order exists.",
       };
     }
     throw error;

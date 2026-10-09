@@ -3,6 +3,9 @@ import { createOrder } from "./order.ts";
 import { vittles } from "./vittles/client.ts";
 import type { OrderResult } from "./pos.ts";
 
+const USAGE =
+  "Usage: npm start -- --item <name> [--location <id>] [--quantity <n>]";
+
 let values;
 try {
   ({ values } = parseArgs({
@@ -17,9 +20,7 @@ try {
     "Invalid arguments:",
     error instanceof Error ? error.message : String(error),
   );
-  console.log(
-    'Usage: npm start -- [--item <name>] [--location <id>] [--quantity <n>]',
-  );
+  console.error(USAGE);
   process.exit(1);
 }
 
@@ -33,8 +34,8 @@ const createOrders = async () => {
   const locations: string[] = [];
 
   if (!itemName) {
-    console.log('Error creating order: Item name is required.');
-    console.log('Usage: npm start -- [--item <name>] [--location <id>] [--quantity <n>]');
+    console.error("Error creating order: Item name is required.");
+    console.error(USAGE);
     process.exit(1);
   }
 
@@ -43,10 +44,8 @@ const createOrders = async () => {
     itemQuantity <= 0 ||
     !Number.isInteger(itemQuantity)
   ) {
-    console.log('Error creating order: Quantity must be a positive number.');
-    console.log(
-      'Usage: npm start -- [--item <name>] [--location <id>] [--quantity <n>]',
-    );
+    console.error("Error creating order: Quantity must be a positive integer.");
+    console.error(USAGE);
     process.exit(1);
   }
 
@@ -57,7 +56,17 @@ const createOrders = async () => {
       console.error(error instanceof Error ? error.message : String(error));
       process.exit(1);
     });
-    locations.push(...allLocations.filter((l) => l.active).map((l) => l.id));
+    for (const l of allLocations) {
+      if (l.active) {
+        locations.push(l.id);
+      } else {
+        results.push({
+          location: l.id,
+          ok: false,
+          reason: "skipped: location currently inactive",
+        });
+      }
+    }
   }
 
   for (const location of locations) {
@@ -71,6 +80,7 @@ const createOrders = async () => {
       );
       results.push({ location, ...order });
     } catch (error) {
+      process.exitCode = 1;
       results.push({ location, ok: false, reason: String(error) });
     }
   }
