@@ -2,7 +2,7 @@ import type { Location, MenuItem, NewOrder, Order, PosClient, SubmitResult } fro
 import { send, VittlesError } from "./http.ts";
 import { getToken } from "./auth.ts";
 
-const api_version = process.env.API_VERSION ?? "v1";
+const api_version = "v1";
 
 type RawMenuItem = {
   id: string;
