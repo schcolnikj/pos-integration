@@ -1,5 +1,5 @@
 import type { Location, MenuItem, NewOrder, Order, PosClient, SubmitResult } from "../pos.ts";
-import { send, VittlesError } from "./http.ts";
+import { send } from "./http.ts";
 import { getToken } from "./auth.ts";
 
 const api_version = "v1";
@@ -29,7 +29,7 @@ const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
     }
 
     if (!response.ok) {
-        throw new VittlesError(`${init.method ?? "GET"} ${path} failed: ${response.status}.`, response.status);
+        throw new Error(`${init.method ?? "GET"} ${path} failed: ${response.status}.`);
     }
     return response.json() as Promise<T>;
 };
@@ -40,13 +40,14 @@ export const getLocations = async (): Promise<Location[]> => {
 
   while (true) {
     const path: string =
-      "/" + api_version + "/locations" + (cursor ? "?cursor=" + cursor : "");
+      "/" + api_version + "/locations" + (cursor ? "?cursor=" + encodeURIComponent(cursor) : "");
     const res = await request<{ data: Location[]; next_cursor?: string }>(
       path,
       {
         method: "GET",
       },
     );
+    if (!res.data) throw new Error("Locations response missing data");
     locations.push(...res.data);
     if (!res.next_cursor) break;
     cursor = res.next_cursor;
@@ -61,7 +62,7 @@ export const getMenu = async (locationId: string): Promise<MenuItem[]> => {
   });
 
   const items = res.menu_items ?? res.menuItems;
-  if (!items) throw new VittlesError("Menu response missing menu_items", 502);
+  if (!items) throw new Error("Menu response missing menu_items");
 
   return items.map((item) => ({
     id: item.id,
@@ -75,6 +76,7 @@ export const getMenu = async (locationId: string): Promise<MenuItem[]> => {
 const findOrdersByRef = async (clientRef: string): Promise<Order[]> => {
   const path = `/${api_version}/orders?client_ref=${encodeURIComponent(clientRef)}`;
   const res = await request<{ data: Order[] }>(path, { method: "GET" });
+  if (!res.data) throw new Error("FindOrdersByRef response missing data");
   return res.data;
 };
 

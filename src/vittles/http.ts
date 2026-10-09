@@ -1,13 +1,5 @@
 export const base_url = process.env.VITTLES_BASE_URL || "http://localhost:8422";
 
-export class VittlesError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
-
 export const send = async (
   path: string,
   init: RequestInit,
@@ -27,12 +19,12 @@ export const send = async (
     if (!retryable || retry === 2) {
       return response;
     }
-    if (response.status === 429) {
-      const waitMs =
-        Number(response.headers.get("Retry-After-Ms")) ||
-        Number(response.headers.get("Retry-After")) * 1000 ||
-        60_000;
-      await new Promise((r) => setTimeout(r, waitMs));
-    }
+    const waitMs =
+      response.status === 429
+        ? Number(response.headers.get("Retry-After-Ms")) ||
+          Number(response.headers.get("Retry-After")) * 1000 ||
+          60_000
+        : 500 * 2 ** retry; // 5xx: 500ms, then 1s
+    await new Promise((r) => setTimeout(r, waitMs));
   }
 };
