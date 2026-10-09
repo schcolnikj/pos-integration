@@ -22,7 +22,7 @@ export const createOrder = async (
       created: false,
       orderId: existingOrders[0].id,
       total: existingOrders[0].total,
-      note: "There was already an order with the same client reference. This order was not created again.",
+      note: "already existed",
     };
   }
 

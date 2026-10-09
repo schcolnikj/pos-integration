@@ -56,7 +56,7 @@ export const getLocations = async (): Promise<Location[]> => {
 };
 
 export const getMenu = async (locationId: string): Promise<MenuItem[]> => {
-  const path = "/" + api_version + "/locations/" + locationId + "/menu";
+  const path = "/" + api_version + "/locations/" + encodeURIComponent(locationId) + "/menu";
   const res = await request<{ menuItems?: RawMenuItem[]; menu_items?: RawMenuItem[] }>(path, {
     method: "GET",
   });

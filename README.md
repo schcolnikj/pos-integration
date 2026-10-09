@@ -1,6 +1,6 @@
 # Integración con Vittles POS
 
-CLI en TypeScript que se autentica, trae todas las locations, lee el menú de cada una y crea una orden por location activa (o solo en `--location`), y después imprime un resumen. Correrlo dos veces no duplica órdenes.
+CLI en TypeScript que se autentica, trae todas las locations y, en cada location activa (o solo en `--location`), busca el item en el menú y crea una orden. Después imprime un resumen. Correrlo dos veces no duplica órdenes.
 
 ## Cómo correrlo
 
