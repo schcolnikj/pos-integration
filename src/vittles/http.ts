@@ -21,6 +21,7 @@ export const send = async (
         const { message, cause } = error as Error & { cause?: Error };
         throw new Error(
           `${method} ${base_url + path} failed: ${cause?.message ?? message}`,
+          {cause: error },
         );
       }
       await new Promise((r) => setTimeout(r, 500 * 2 ** retry));
@@ -28,7 +29,7 @@ export const send = async (
     }
     const retryable =
       response.status === 429 ||
-      (response.status >= 500 && init.method !== "POST");
+      (response.status >= 500 && method !== "POST");
     if (!retryable || retry === 2) {
       return response;
     }
