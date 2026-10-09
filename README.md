@@ -12,7 +12,17 @@ python3 mock_server.py       # terminal 1
 npm start                    # terminal 2: "Buffalo Wings (12)", cantidad 2, todas las locations activas
 ```
 
+En Windows (cmd o PowerShell):
+
+```bat
+copy .env.example .env.local
+py mock_server.py
+npm start
+```
+
 Opciones: `npm start -- --item "<nombre>" [--location <id>] [--quantity <n>]`. Con npm hace falta el `--` para que los flags lleguen al script; con pnpm no (`pnpm start --item "<nombre>"`).
+
+Tests: `npm test` (no necesitan el mock server).
 
 ## Explorando la API
 
@@ -37,7 +47,7 @@ Directamente no documentado: las órdenes necesitan un header `X-Vittles-Locatio
   - `src/order.ts` tiene las reglas: la clave anti-duplicados, buscar el item, chequear disponibilidad y, si el POST falla, verificar si la orden se creó igual.
   - `src/pos.ts` define los tipos que usa el programa y la interfaz `PosClient`, que cualquier POS tiene que cumplir.
   - `src/vittles/` es lo único que sabe que Vittles existe: `auth.ts` (token de 90s y su renovación), `http.ts` (timeouts y reintentos esperando lo que indica `Retry-After-Ms`) y `client.ts` (endpoints, paginación, y el mapeo de los datos tal como vienen a los tipos de `pos.ts`).
-- **Auth y HTTP viven dentro de `vittles/`** porque son de Vittles: Toast tendría su propio login y sus propios límites. Por la misma razón los tipos crudos de la API (`price: number | string`) quedan en `client.ts` y `pos.ts` solo tiene los limpios. Un segundo POS sería otra carpeta que cumpla `PosClient`, sin tocar `order.ts`.
+- **Auth y HTTP viven dentro de `vittles/`** porque son de Vittles: Toast tendría su propio login y sus propios límites. Por la misma razón los tipos crudos de la API (`price: number | string`) quedan en `client.ts` y `pos.ts` solo tiene los limpios. La intención es que un segundo POS sea otra carpeta que cumpla `PosClient`. Todavía no es del todo así: el check-then-create de `order.ts` existe porque Vittles ignora `client_ref`; con un POS que respete idempotency keys, esa lógica pasaría al adapter de Vittles.
 - **Idempotencia:** la API ignora `client_ref`, así que armo uno con location, cliente, item y cantidad, y consulto `GET /v1/orders?client_ref=` antes de crear. Noté que `GET /v1/orders` devolvía `[]` justo después de haber creado una orden, y Claude me ayudó a encontrar la búsqueda por `client_ref`.
 - **Aceptar los nombres de campo de los docs y los reales.** Donde solo cambia el nombre, leo los dos: `menu_items ?? menuItems` y `expires_in ?? expires`. Si Vittles corrige la API para que coincida con los docs, la integración sigue andando sin cambios. Si no viene ninguno de los dos, falla con un error claro en lugar de un `undefined.map` o un `expiresAt` en `NaN`, que haría pedir un token nuevo en cada request.
 
@@ -46,7 +56,7 @@ Directamente no documentado: las órdenes necesitan un header `X-Vittles-Locatio
 - **Idempotency keys del lado del servidor.** Mi key trata como duplicado a un cliente que realmente quiere repetir una orden. Además, check-then-create tiene una condición de carrera si dos ejecuciones se superponen, y reintentar el POST de una orden después de un 5xx o un timeout no se puede hacer seguro desde el cliente. Las tres cosas necesitan una key que el servidor respete.
 - **Persistencia.** La deduplicación depende de la memoria del servidor; si se reinicia, se olvida.
 - **Esperar a que se libere el rate limit.** Los reintentos son acotados y después falla con un mensaje claro.
-- **Concurrencia y tests automatizados.** Las llamadas secuenciales alcanzan para cinco locations; lo verifiqué corriéndolo dos veces.
+- **Concurrencia.** Las llamadas secuenciales alcanzan para cinco locations.
 
 ## Uso de IA
 
@@ -56,3 +66,4 @@ Usé Claude Code principalmente como revisor:
 - Mi primer pedido fue un chequeo de seguridad de `mock_server.py`, así que Claude ya había leído el servidor cuando me ayudó a resolver el header de location y la búsqueda por `client_ref`. Todo lo del cuadro lo verifiqué yo en Postman.
 - Sus revisiones y asistencias me ayudaron a encontrar bugs y discrepancias como el vencimiento del token temprano, headers por request que se pisaban en `request`, el uso de Location como header para crear ordenes, y un `client_ref` sin encodear en el query string.
 - Sugirió unificar los casos de una location y de todas en un solo loop, y me ayudó con la lógica de reintentos. Cuando editó código sin que se lo pidiera, lo revertí y escribí el cambio yo. También me ayudó a pasar mis notas a este README.
+- Los tests (`test/order.test.ts`) los escribió Claude completos, a partir de los casos que le pedí: idempotencia y los caminos de error. Los revisé yo, y comprobamos que fallan si se reintroducen los bugs que cubren.
