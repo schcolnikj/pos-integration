@@ -28,7 +28,10 @@ export const send = async (
       return response;
     }
     if (response.status === 429) {
-      const waitMs = Number(response.headers.get("Retry-After-Ms")) || 60000;
+      const waitMs =
+        Number(response.headers.get("Retry-After-Ms")) ||
+        Number(response.headers.get("Retry-After")) * 1000 ||
+        60_000;
       await new Promise((r) => setTimeout(r, waitMs));
     }
   }
